@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+
+        #parent {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+
+        .child {
+            flex: 1;
+        }
+
+        #canvas {
+            background-color: aqua;
+        }
+
+        #circle {
+            transform: rotate(-90deg);
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="parent">
+        <svg id="canvas" class="child">
+            <circle id="circle" cx="108" cy="108" r="100" fill="white" stroke="black" stroke-width="16"
+                stroke-linecap="round">
+            </circle>
+            <text x="108" y="108" text-anchor="middle" id="text">Something?</text>
+        </svg>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/luxon@1.26.0/build/global/luxon.min.js"></script>
+    <script>
+        let config = {
+            refreshTimeMs: 3000,
+            startupTimeMs: 2000,
+            textRefreshTimeMs: 500,
+        }
+        let DateTime = luxon.DateTime;
+
+        let startTime = DateTime.fromObject({
+            year: 2021,
+            month: 4,
+            day: 4,
+            hour: 16,
+            minute: 59,
+            zone: "America/Chicago"
+        })
+
+        let endTime = DateTime.fromObject({
+            year: 2021,
+            month: 4,
+            day: 4,
+            hour: 17,
+            minute: 23,
+            zone: "America/Chicago"
+        })
+
+        let circleElem = document.querySelector("#circle")
+        let circumference = 2 * Math.PI * circleElem.r.baseVal.value
+
+        circleElem.style.strokeDasharray = circumference
+        circleElem.style.strokeDashoffset = circumference
+
+        let textElem = document.querySelector("#text")
+        // Set progress bar (to be animated)
+        let isFirstRun = true
+
+        function setTextValues(){
+            let now = DateTime.now()
+            textElem.textContent = endTime.toRelative({ base: now })
+            setTimeout(setTextValues, config.textRefreshTimeMs)
+        }
+        function setProgressValues() {
+            if (isFirstRun) {
+                circleElem.style.transition = `stroke-dashoffset ${config.startupTimeMs}ms linear`;
+            }
+            else {
+                circleElem.style.transition = `stroke-dashoffset ${config.refreshTimeMs}ms linear`;
+            }
+            let now = DateTime.now()
+            let totalMs = endTime.diff(startTime).as("milliseconds")
+            let currMs = now.diff(startTime).as("milliseconds")
+            let progressPercentage = currMs / totalMs
+
+            if (progressPercentage < 1) {
+                let progressVal = circumference * (1 - progressPercentage)
+
+                if (isFirstRun) {
+                    setTimeout(function() {
+                        circleElem.style.strokeDashoffset = progressVal
+                    }, 1)
+                    setTimeout(setProgressValues, config.startupTimeMs)
+                } else {
+                circleElem.style.strokeDashoffset = progressVal
+                    setTimeout(setProgressValues, config.refreshTimeMs)
+                }
+            }
+            else {
+                circleElem.style.strokeDashoffset = 0
+            }
+
+            if (isFirstRun) {
+                isFirstRun = false
+            }
+        }
+        setProgressValues()
+        setTextValues()
+
+    </script>
+</body>
+
+</html>
